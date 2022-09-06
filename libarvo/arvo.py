@@ -6,19 +6,19 @@ from ctypes import byref, c_double, c_int, create_string_buffer
 import numpy as np
 
 from libarvo.lib import lib
-from libarvo.typing import Array1D, Array2D, ArrayLike1D, ArrayLike2D
+from libarvo.mytyping import Array1D, Array2D, ArrayLike1D, ArrayLike2D
 
 
 def molecular_vs(
     coordinates: ArrayLike2D,
     radii: ArrayLike1D,
-    idx_metal: int,
     probe_radius: float = 0,
 ) -> tuple[float, float]:
     """Calculates molecular volume and surface.
     Args:
         coordinates: Coordinates as n x 3 matrix (Å)
         radii: vdW radii (Å)
+        probe_radius (optional): radius of the probe for SASA (Å)
     Returns:
         V: Molecular volume (Å^3)
         S: Molecular surface (Å^2)
@@ -42,7 +42,7 @@ def molecular_vs(
     n_atoms = c_int(coordinates.shape[0])
 
     # Run libconeangle
-    lib.cone_angle(
+    lib.arvo(
         n_atoms,
         coordinates,
         radii,
