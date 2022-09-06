@@ -7,8 +7,9 @@ import pytest
 
 from libarvo import molecular_vs
 
+
 def test_sphere():
-    coords = np.asarray([0,0,0], dtype=float)
+    coords = np.asarray([0, 0, 0], dtype=float)
     radii = np.asarray([1.7], dtype=float)
     radius_probe = 0.0
     n_atoms = 1
