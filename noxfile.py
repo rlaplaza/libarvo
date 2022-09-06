@@ -3,9 +3,9 @@
 import nox
 from nox.sessions import Session
 
-package = "libconeangle"
+package = "libarvo"
 nox.options.sessions = "lint", "tests", "mypy"  # default session
-locations = "libconeangle", "test", "noxfile.py"  # Linting locations
+locations = "libarvo", "test", "noxfile.py"  # Linting locations
 pyversions = ["3.8", "3.9", "3.10"]
 
 
@@ -13,7 +13,7 @@ pyversions = ["3.8", "3.9", "3.10"]
 @nox.session(python=pyversions)
 def tests(session: Session) -> None:
     """Run tests."""
-    args = session.posargs + ["--cov=libconeangle", "--import-mode=importlib", "-s"]
+    args = session.posargs + ["--cov=libarvo", "--import-mode=importlib", "-s"]
     session.install("pytest", "pytest-cov")
     session.install(".")
     session.run("pytest", *args)

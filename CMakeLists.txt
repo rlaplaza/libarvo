@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.17)
-project(libconeangle LANGUAGES Fortran)
+project(libarvo LANGUAGES Fortran)
 
 # Fetch stdlib
 set(CMAKE_MAXIMUM_RANK 2)
@@ -28,25 +28,25 @@ endif()
 # Set up shared library target
 set(srcs)
 add_subdirectory(src)
-add_library(coneangle SHARED ${srcs})
-target_link_libraries(coneangle fortran_stdlib)
+add_library(arvo SHARED ${srcs})
+target_link_libraries(arvo fortran_stdlib)
 
 # Install
 if(SKBUILD)
   if(WIN32)
     # Set flags for Windows compatibility
-    set_target_properties(coneangle PROPERTIES LIBRARY_PREFIX "lib")
-    set_target_properties(coneangle PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    set_target_properties(arvo PROPERTIES LIBRARY_PREFIX "lib")
+    set_target_properties(arvo PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
     
     # Link statically against dependencies for Windows
     if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
-      target_link_options(coneangle PRIVATE "-static")
+      target_link_options(arvo PRIVATE "-static")
     endif()
   endif()
 
   message(STATUS "The project is built using scikit-build")
-  install(TARGETS coneangle LIBRARY DESTINATION libconeangle ARCHIVE DESTINATION libconeangle RUNTIME DESTINATION libconeangle) 
+  install(TARGETS arvo LIBRARY DESTINATION libarvo ARCHIVE DESTINATION libarvo RUNTIME DESTINATION libarvo) 
 else()
-  set_target_properties(coneangle PROPERTIES PUBLIC_HEADER "include/arvo.h")
-  install(TARGETS coneangle LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR} PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libconeangle)
+  set_target_properties(arvo PROPERTIES PUBLIC_HEADER "include/arvo.h")
+  install(TARGETS arvo LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR} PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libarvo)
 endif()
