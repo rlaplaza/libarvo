@@ -1,0 +1,16 @@
+name = "libarvo"
+version = "0.1.0"
+license = "MIT"
+author = "R. Laplaza"
+maintainer = "rlaplaza@duck.com"
+copyright = "Copyright 2022, lcmd-epfl"
+[build]
+auto-executables = true
+auto-tests = true
+auto-examples = true
+[install]
+library = false
+[dependencies]
+stdlib = { git="https://github.com/fortran-lang/stdlib", branch="stdlib-fpm" }
+[dev-dependencies]
+test-drive = { git="https://github.com/fortran-lang/test-drive" }
