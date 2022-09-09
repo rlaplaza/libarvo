@@ -29,6 +29,7 @@ contains
     character(:), allocatable :: errmsg_f
 
     ! Call subroutine
+    write(6,*) n_atoms, coordinates, radii, probe_radius, V, S, stat, errmsg_f
     call arvo(n_atoms, coordinates, radii, probe_radius, V, S, stat, errmsg_f)
 
     ! Convert error message to C format.

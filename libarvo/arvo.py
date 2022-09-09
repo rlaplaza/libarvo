@@ -1,7 +1,7 @@
 """ARVO python api to compute molecular volumes and surfaces."""
 from __future__ import annotations
 
-from ctypes import byref, c_double, c_int, create_string_buffer
+from ctypes import byref, c_char_p, c_double, c_int, create_string_buffer, POINTER
 
 import numpy as np
 
@@ -26,19 +26,32 @@ def molecular_vs(
         ValueError: If libarvo exits with non-zero error code or if input validation fails.
     """
     # Set up input
-    coordinates: Array2D = np.ascontiguousarray(coordinates)
+    coordinates: Array2D = np.ascontiguousarray(coordinates, dtype=np.float64)
     radii: Array1D = np.ascontiguousarray(radii, dtype=np.float64)
 
-    if len(coordinates) != len(radii):
-        raise ValueError(
-            f"Length of coordinates, {len(coordinates)}, "
-            f"and radii, {len(radii)}, must be the same."
-        )
+    if coordinates.ndim != 1:
+        if coordinates.shape[0] != radii.shape[0]:
+            raise ValueError(
+                f"Length of coordinates, {len(coordinates)}, "
+                f"and radii, {len(radii)}, must be the same."
+            )
+    else:
+        if coordinates.shape[0] != 3:
+            raise ValueError(
+                "For a single atom, three (x,y,z) coordinates are required."
+            )
+        if radii.shape[0] != 1:
+            raise ValueError("For a single atom, a single radius is required.")
+        coordinates = np.expand_dims(coordinates, axis=0)
+
+    # coordinates_ = coordinates.ctypes.data_as(POINTER(c_double))
+    # radii_ = radii.ctypes.data_as(POINTER(c_double))
 
     V_ = c_double()
     S_ = c_double()
     stat_ = c_int()
     errmsg_ = create_string_buffer(100)
+    probe_radius = c_double(probe_radius)
     n_atoms = c_int(coordinates.shape[0])
 
     # Run libconeangle
@@ -46,8 +59,9 @@ def molecular_vs(
         n_atoms,
         coordinates,
         radii,
-        V,
-        S,
+        probe_radius,
+        byref(V_),
+        byref(S_),
         byref(stat_),
         errmsg_,
     )

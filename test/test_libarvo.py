@@ -1,5 +1,7 @@
 """Test libarvo."""
 
+import faulthandler
+
 import numpy as np
 from numpy.testing import assert_allclose
 from numpy.typing import NDArray
@@ -13,6 +15,11 @@ def test_sphere():
     radii = np.asarray([1.7], dtype=float)
     radius_probe = 0.0
     n_atoms = 1
+    faulthandler.enable()
     v, s = molecular_vs(coords, radii, radius_probe)
     assert_allclose(v, 20.5795)
     assert_allclose(s, 36.3168)
+
+
+if __name__ == "__main__":
+    test_sphere()

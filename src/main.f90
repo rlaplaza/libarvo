@@ -6,24 +6,28 @@
       public :: arvo
       contains
 
-      subroutine arvo(ns,sc,sr,pr,iarea,ivolume,stat,errmsg)
-
-      implicit real*8 (a-h,o-z)
-      real*8, intent(out) ::  iarea, ivolume
-!f2py intent(out) iarea, ivolume
+      subroutine arvo(ns,sc,sr,pr,ivolume,iarea,stat,errmsg)
+      implicit none
       integer, intent(in) :: ns
 !f2py intent(in) ns
-      real*8, intent(in) :: sc(ns, 3), sr(ns), pr
+      real(wp), intent(in) :: sc(3, ns), sr(ns), pr
 !f2py intent(in) sc, sr, pr
 !f2py depend(ns) sc, sr
+      real(wp), intent(out) ::  iarea, ivolume
+!f2py intent(out) iarea, ivolume
       integer, intent(out) :: stat
 !f2py intent(out) stat
       character(len=:), allocatable, intent(out) :: errmsg
 !f2py intent(out)
-
+      real(wp) :: av(2)
+      integer :: neighbors_indices(100000)
+      real(wp), allocatable, dimension(:,:) :: spheres
+      integer, allocatable, dimension(:) :: neighbors_number,index_start
+      integer :: i
 !     Computing surface area and volume of the overlapping spheres
-      parameter (pi=3.14159265358979323846264d0,ks=1000,kl=100,ka=5000,&
-     &          ki=10000)
+      real(wp), parameter :: pi=3.14159265358979323846264d0, sa=0.324d0 
+! "Random" sin value sa
+      integer, parameter :: ks=300,kl=300,ka=2000,ki=10000
 
 !                ks - maximal sphere number
 !                kl - maximal neighbors number of one sphere
@@ -34,9 +38,11 @@
 !        eps_deltat - accuracy level in the subroutine circles_intersect
 !        eps_angle - accuracy level in the subroutine delete_equal (angl
 !          
-      dimension spheres(ks,4),neighbors_number(ks),index_start(ks),&
-     &          neighbors_indices(ki),av(2)
-
+!      dimension spheres(ns,4),neighbors_number(ns),index_start(ns),&
+!     &          neighbors_indices(ki),av(2)
+      allocate(spheres(ks,4))
+      allocate(neighbors_number(ks))
+      allocate(index_start(ks))
 ! Validate input
       if (size(sc, dim=2) /= size(sr)) then
       errmsg = "Mismatch in dimension between coordinates and radii."
@@ -44,21 +50,29 @@
       return
       endif
 
-      if (size(sr) > 1000) then
-      errmsg = "No more than 400 spheres can be processed by arvo."
+      if (size(sr) > ks) then
+      errmsg = "That many spheres can not be processed by arvo."
       stat = 1
       return
       endif
+
+      if (size(sc, dim=2).EQ.1 ) then
+      ivolume = (4.0_wp/3.0_wp) * pi * sr(1)**3 
+      iarea = 4.0_wp * pi * sr(1)**2
+      stat = 0 
+      return
+      endif
+
 !     spheres(i,1)=xi 
 !     spheres(i,2)=yi     - ith sphere center coordinates
 !     spheres(i,3)=zi 
 !     spheres(i,4)=ri     - ith sphere radius 
 !     neighbors_number, index_start, neighbors_indices description
 !            is given in the    subroutine imake_neighbors
-      spheres(:,1) = sc(:,1)
-      spheres(:,2) = sc(:,2)
-      spheres(:,3) = sc(:,3)
       do i=1,ns
+          spheres(i,1) = sc(1,i)
+          spheres(i,2) = sc(2,i)
+          spheres(i,3) = sc(3,i)
           spheres(i,4) = sr(i) + pr
       enddo
 !     ns - spheres number
@@ -70,7 +84,6 @@
 !   If some North Pole is close to the other atoms surface molecules rot
       do while (North_Pole_test(1,ns,spheres,neighbors_number,&
      &          index_start,neighbors_indices,ks,ki).EQ.0) 
-      sa=0.324d0 ! "Random" sin value
            call ispheres_rotation(spheres,ks,ns,sa) ! random molecule rot
       enddo
 
@@ -84,6 +97,7 @@
           iarea=iarea+av(2)
       enddo
      
+      stat = 0
       return
       end subroutine arvo
 
@@ -109,9 +123,14 @@
 !               index_start=(1,4,6,8,10,10,10,11)
 !               neighbors_indices(2,4,7,1,3,2,4,1,3,1)
 !                 
-      implicit real*8 (a-h,o-z)
-      dimension spheres(ks,4),ind(kl),neighbors_number(ks),&
-     &          index_start(ks),neighbors_indices(ki)
+      implicit none
+      real(wp), dimension(:,:), intent(in) :: spheres
+      integer, intent(in) :: i1, i2, ks, kl, ns, ki
+      integer, dimension(:), intent(inout) :: &
+     &      neighbors_number, index_start
+      integer, dimension(:), intent(inout) :: neighbors_indices
+      integer :: ind(kl)
+      integer :: i,j
         index_start(i1)=1
         do i=i1,i2
            neighbors_number(i)=ineighbors(i,spheres,ind,ks,kl,ns)      
@@ -125,7 +144,7 @@
               enddo              
            endif
         enddo
-      stat = 0
+
       return
       end subroutine imake_neighbors
 
@@ -140,12 +159,16 @@
 !       radius in matrix spheres to -radius !!!
 !       If some other sphere is subset of ith sphere, than we change its
 !  
-      implicit real*8 (a-h,o-z)
-      dimension spheres(ks,4),ind(kl)
+      implicit none
+      integer, intent(in) :: i, ks, kl, ns
+      real(wp), dimension(:,:), intent(in) :: spheres
+      integer, intent(inout) :: ind(kl)
+      real(wp) :: dd, xi, yi, zi, ri, rk
+      integer :: k, neighbors_num
 
-        neighbors_num=0
-!       i-th sphere data
-        xi=spheres(i,1)
+      neighbors_num=0
+!     i-th sphere data
+      xi=spheres(i,1)
       yi=spheres(i,2)
       zi=spheres(i,3)
       ri=spheres(i,4)
@@ -170,7 +193,7 @@
               endif
            endif
         enddo
-      neighbors=neighbors_num
+      ineighbors=neighbors_num
       return
       end function ineighbors
 
@@ -183,47 +206,55 @@
 !          dmin - square of minimal distance of the North Pole to neighb
 !  
 
-      implicit real*8 (a-h,o-z)
-      dimension spheres(ks,4),neighbors_number(ks),&
-     &          index_start(ks),neighbors_indices(ki)
+      implicit none
+      real(wp), dimension(:,:), intent(in) :: spheres
+      integer, intent(in) :: i1, i2, ks, ki
+      integer, allocatable, dimension(:), intent(inout) :: &
+     &      neighbors_number, index_start
+      integer, dimension(:), intent(inout) :: neighbors_indices
+      integer :: i,k,ink,npt
+      real(wp) :: eps_north_pole, dmin, d
 
 !       Test precision - MAY BE CHANGED
-        eps_north_pole=1d-4
-
+      eps_north_pole=1d-4
       dmin=10000d0
       do i=i1,i2  
-          do k=1,neighbors_number(i)
+         do k=1,neighbors_number(i)
               ink=neighbors_indices(index_start(i)+k-1) ! kth neighbor i
-              d=dabs(dsqrt((spheres(i,1)-spheres(ink,1))**2+&
-     &                (spheres(i,2)-spheres(ink,2))**2&
-     &           +(spheres(i,3)+spheres(i,4)-spheres(ink,3))**2)&
-     &            -spheres(ink,4))
+              d=dabs(dsqrt((spheres(i,1)-spheres(ink,1))**2&
+     &          +(spheres(i,2)-spheres(ink,2))**2&
+     &          +(spheres(i,3)+spheres(i,4)-spheres(ink,3))**2)&
+     &          -spheres(ink,4))
               if (d.LT.dmin) then 
-                  dmin=d 
+                dmin=d 
               endif
           enddo
       enddo
 
 
-!       minimal distance = dmin   
-        if (dmin.LT.eps_north_pole) then
-           npt=0 ! Bad news!
+!     minimal distance = dmin   
+      if (dmin.LT.eps_north_pole) then
+         npt=0 ! Bad news!
       else
          npt=1 ! O.K.
       endif
          
       North_Pole_test=npt   
            
-        return
+      return
       end function North_Pole_test
 
 
-        subroutine ispheres_rotation(spheres,ks,ns,sa)
+      subroutine ispheres_rotation(spheres,ks,ns,sa)
 !       Random rotation of molecule about the y-axis
 !       after bad North Pole test.
 !          Some North Pole is near other spheres surface
-      implicit real*8 (a-h,o-z)
-      dimension spheres(ks,4)
+      implicit none
+      real(wp), dimension(:,:), intent(inout) :: spheres
+      integer, intent(in) :: ks, ns
+      real(wp), intent(in) :: sa
+      real(wp) :: x, z, ca
+      integer :: i, j
       
       ca=dsqrt(1d0-sa*sa)     
       do i=1,ns
@@ -243,15 +274,26 @@
 !      - the volume of domain inside i-th and outside of
 !        all other spheres
 !     
-      implicit real*8 (a-h,o-z)
-      dimension spheres(ks,4),circles(kl,4),arcs(ka,3),   &
-     &          sphere_local(kl,4),ind(kl),neighbors_number(ks),&
-     &          index_start(ks),neighbors_indices(ki),av(2),avi(2)
+      implicit none
+      real(wp), dimension(:,:), intent(in) :: spheres
+      integer, allocatable, dimension(:), intent(in) :: &
+     &      neighbors_number, index_start
+      integer, dimension(:), intent(in) :: neighbors_indices
+      integer, intent(in) :: ks, kl, ki, ka
+      real(wp), intent(out) :: av(2)
+      real(wp) ::avi(2)
+      real(wp), dimension(:,:), allocatable :: circles, arcs,&
+     & sphere_local
+      integer :: ind(kl)
+      integer :: i,j,nls,npos,narcs
+      real(wp) :: z1,r1
 !  
 !       circles, arcs, sphere_local are described below
 !  
-      parameter (pi=3.14159265358979323846264d0)
-
+      real(wp), parameter :: pi=3.14159265358979323846264d0
+      allocate(circles(kl,4))
+      allocate(arcs(ka,3))
+      allocate(sphere_local(kl,4))
 !  
 !      Determination of i-th sphere's neighbors (row indices in matrix s
 !  
@@ -314,12 +356,16 @@
 
 
 
-        subroutine ilocal_spheres(spheres,ind,sphere_local,nls,ks,kl)
+      subroutine ilocal_spheres(spheres,ind,sphere_local,nls,ks,kl)
 !  
 !     Take sphere_local out of the main array spheres
 !  
-      implicit real*8 (a-h,o-z)
-      dimension spheres(ks,4),ind(kl),sphere_local(kl,4)
+      implicit none
+      integer, intent(in) :: nls, ks, kl
+      real(wp), intent(in), dimension(:,:) :: spheres
+      real(wp), intent(inout), dimension(:,:) :: sphere_local
+      integer, intent(in) :: ind(kl)
+      integer :: i, j
 
       do i=1,nls
           do j=1,4
@@ -344,8 +390,13 @@
 !       circles(i,3)=ri    - ith circle's radius 
 !       circles(i,4)=+1/-1 - circle orientation 
 !   
-      implicit real*8 (a-h,o-z)
-      dimension circles(kl,4),sphere_local(kl,4)
+      implicit none
+      integer, intent(in) :: kl, nls
+      real(wp), intent(in), dimension(:,:) :: sphere_local
+      real(wp), intent(inout), dimension(:,:) :: circles
+      integer :: i,k
+      real(wp) :: r1, dx, dy, a, b, c, d
+      
       r1=sphere_local(1,4)
       do k=1,(nls-1)
           dx=sphere_local(1,1)-sphere_local(k+1,1)
@@ -384,11 +435,17 @@
 !     arc lies inside all other positive and outside all other
 !       negative circles, then we will put it inside arcs structure
 !  
-      implicit real*8 (a-h,o-z)
-      dimension arcs(ka,3),circles(kl,4),arcsnew(ka,3)
-      parameter (pi=3.14159265358979323846264d0)
+      implicit none
+      integer, intent(in) :: kl, nls, ka
+      real(wp), intent(in), dimension(:,:) :: circles
+      real(wp), intent(inout), dimension(:,:) :: arcs
+      real(wp), allocatable, dimension(:,:) :: arcsnew
+      integer :: number_arc, i, j, k, nna
+      real(wp), parameter :: pi=3.14159265358979323846264d0
 
-        number_arc=0
+      allocate(arcsnew(ka,3))
+
+      number_arc=0
       if (nls.EQ.2) then
 !         we have only 1 circle
             number_arc=1
@@ -410,7 +467,8 @@
           enddo
       endif
 
-      circles_to_arcs=number_arc
+      deallocate(arcsnew)
+      icircles_to_arcs=number_arc
       return
       end function icircles_to_arcs
 
@@ -430,9 +488,14 @@
 !       arcsnew(i,2)=sigma - sigma is the starting angle of arc
 !       arcsnew(i,3)=delta - delta is oriented arc angle
 !  
-      implicit real*8 (a-h,o-z)
-      dimension circles(kl,4),arcsnew(ka,3),angles(ka)
-      parameter (pi=3.14159265358979323846264d0)
+      implicit none
+      integer, intent(in) :: i, kl, ka, nls
+      real(wp), intent(in), dimension(:,:) :: circles
+      real(wp), intent(inout), dimension(:,:) :: arcsnew
+      real(wp) :: angles(ka)
+      real(wp), parameter :: pi=3.14159265358979323846264d0
+      integer :: num_arc, num_angle, number_cond, j, jj, na 
+      real(wp) :: ti, si, ri, t, s, r, d, a1, a2, b1, b2
 
       num_arc=0
       num_angle=0
@@ -488,7 +551,8 @@
                   if (jj.NE.i) then
                       t=ti+ri*dcos((angles(j)+angles(j+1))/2d0)
                       s=si+ri*dsin((angles(j)+angles(j+1))/2d0)
-              number_cond=number_cond+ipoint_in_circle(t,s,jj,circles,kl)
+              number_cond=number_cond+ipoint_in_circle(t,s,jj,circles,&
+     &        kl)
                   endif
               enddo
               if (number_cond.EQ.(nls-2)) then
@@ -516,13 +580,13 @@
           endif
       endif
 
-      new_arcs=num_arc
+      inew_arcs=num_arc
       return
       end function inew_arcs
           
 
 
-        subroutine icircles_intersection(ic1,ic2,circles,kl,a1,a2,b1,b2)
+      subroutine icircles_intersection(ic1,ic2,circles,kl,a1,a2,b1,b2)
 !  
 !     Function returns angles of two intersection points
 !     of circles with indices ic1 and ic2 in circles structure circles
@@ -531,10 +595,13 @@
 !     a1 and a2 are corresponding angles with respect to the center of 1
 !     b1 and b2 are corresponding angles with respect to the center of 2
 !  
-      implicit real*8 (a-h,o-z)
-      dimension circles(kl,4)
-      parameter (pi=3.14159265358979323846264d0)
-      eps_deltat=1d-12
+      implicit none
+      real(wp), intent(in), dimension(:,:) :: circles
+      integer, intent(in) :: ic1, ic2, kl
+      real(wp), intent(inout) :: a1, a2, b1, b2
+      real(wp) :: t1, s1, r1, t2, s2, r2, A, B, C, D
+      real(wp), parameter :: pi=3.14159265358979323846264d0
+      real(wp), parameter :: eps_deltat = 1d-12
 !       (t,s) - circle center, r - circle radius
       t1=circles(ic1,1)
       s1=circles(ic1,2)
@@ -629,7 +696,7 @@
       if (b1.LT.0) b1=b1+2d0*pi
       if (b2.LT.0) b2=b2+2d0*pi
 
-        return
+      return
       end subroutine icircles_intersection
       
           
@@ -644,22 +711,24 @@
 !  
 !        WE KNOW, THAT CIRCLES HAVE LESS THAN 2 INTERSECTION POINTS !!!
 !  
-      implicit real*8 (a-h,o-z)
-      dimension circles(kl,4)
+      implicit none
+      integer, intent(in) :: i, k, kl
+      real(wp), intent(in), dimension(:,:) :: circles
+      real(wp) :: d
 
       d=dsqrt((circles(i,1)+circles(i,3)-circles(k,1))**2+&
      &        (circles(i,2)-circles(k,2))**2)
       if (d.LT.circles(k,3)) then
           if (circles(k,4).GT.0) then
-              circle_in_circle=1
+              icircle_in_circle=1
           else
-              circle_in_circle=0
+              icircle_in_circle=0
           endif    
       elseif (d.GT.circles(k,3)) then 
           if (circles(k,4).GT.0) then
-              circle_in_circle=0
+              icircle_in_circle=0
           else
-              circle_in_circle=1
+              icircle_in_circle=1
           endif
       else 
 !           d=circles(k,3) - right point on k-th circle - touching of ci
@@ -667,15 +736,15 @@
      &   (circles(i,2)-circles(k,2))**2)
           if (d.LT.circles(k,3)) then
               if (circles(k,4).GT.0) then
-                  circle_in_circle=1
+                  icircle_in_circle=1
               else
-                  circle_in_circle=0
+                  icircle_in_circle=0
               endif
           else
               if (circles(k,4).GT.0) then
-                  circle_in_circle=0
+                  icircle_in_circle=0
               else
-                  circle_in_circle=1
+                  icircle_in_circle=1
               endif
           endif
       endif
@@ -694,21 +763,24 @@
 !  
 !     WE KNOW, THAT POINT IS NOT ON THE CIRCLE !!!
 !  
-      implicit real*8 (a-h,o-z)
-      dimension circles(kl,4)
+      implicit none
+      integer, intent(in) :: k, kl
+      real(wp), intent(in), dimension(:,:) :: circles
+      real(wp), intent(in) :: t, s 
+      real(wp) :: d
 
       d=dsqrt((t-circles(k,1))**2+(s-circles(k,2))**2)
       if (d.LT.circles(k,3)) then
           if (circles(k,4).GT.0) then
-              point_in_circle=1
+              ipoint_in_circle=1
           else
-              point_in_circle=0
+              ipoint_in_circle=0
           endif
       else
           if (circles(k,4).GT.0) then
-              point_in_circle=0
+              ipoint_in_circle=0
           else
-              point_in_circle=1
+              ipoint_in_circle=1
           endif
       endif
 
@@ -723,8 +795,11 @@
 !     Sorting array angles in increasing order
 !     num_angle is the angles array length
 !  
-      implicit real*8 (a-h,o-z)
-      dimension angles(ka)
+      implicit none
+      real(wp), intent(inout), dimension(:) :: angles
+      integer, intent(in) :: num_angle, ka
+      real(wp) :: amax
+      integer :: i, j, ii, k
       
       do i=1,(num_angle-1)
           ii=i
@@ -753,8 +828,11 @@
 !     Sorting array angles in decreasing order
 !     num_angle is the angles array length
 !  
-      implicit real*8 (a-h,o-z)
-      dimension angles(ka)
+      implicit none
+      real(wp), intent(inout), dimension(:) :: angles
+      integer, intent(in) :: num_angle, ka
+      real(wp) :: amin
+      integer :: i, j, ii, k
       
       do i=1,(num_angle-1)
           ii=i
@@ -782,10 +860,14 @@
 !     Deletion of "equal" (to some precision eps_angle)
 !     angles in sorted vector angles
 !  
-      implicit real*8 (a-h,o-z)
-      dimension angles(ka),anglesnew(ka)
-
-      eps_angle=1d-12
+      implicit none
+      integer, intent(in) :: ka
+      integer, intent(in) :: num_angle 
+      real(wp), intent(inout), dimension(:) :: angles
+      real(wp) :: anglesnew(ka)
+      real(wp) :: angle
+      integer :: i, m, delete_equal
+      real(wp), parameter :: eps_angle=1d-12
 
       m=1 
       angle=angles(1)
@@ -801,7 +883,7 @@
       do i=1,m
           angles(i)=anglesnew(i)
       enddo
-
+      idelete_equal = delete_equal
       return
       end function idelete_equal
 
@@ -809,13 +891,21 @@
       subroutine avintegral(circles,arcs,kl,ka,narcs,r1,z1,avi)
 !  
 !     Computing integrals over arcs given in arc structure
-!       according to paper Hayrian, Dzurina, Plavka, Busa
+!       according to paper by Hayrian, Dzurina, Plavka, Busa
 !       
-      implicit real*8 (a-h,o-z)
-      dimension circles(kl,4),arcs(ka,3),avi(2)
-      parameter (pi=3.14159265358979323846264d0)
+      implicit none
+      integer, intent(in) :: kl, ka, narcs
+      real(wp), intent(in), dimension(:,:) :: circles, arcs
+      real(wp), intent(in) :: r1, z1
+      real(wp), intent(inout) :: avi(2)
+      real(wp), parameter :: pi=3.14159265358979323846264d0
+      real(wp), parameter :: eps_two_pi=1d-12
+      integer :: i, k
+      real(wp) :: t, s, r, A, B, C, rr
+      real(wp) :: vIone, vItwo, vIthree, vJone, vJtwo, vJthree
+      real(wp) :: delta_vint, delta_aint
+      real(wp) :: sb, cb, sa, ca, al, be
 
-      eps_two_pi=1d-12
       avi(1)=0d0
       avi(2)=0d0
 
@@ -887,11 +977,13 @@
 
 
 
-      real*8 function fract(A,B,C,sinphi,cosphi,k)
+      real(wp) function fract(A,B,C,sinphi,cosphi,k)
 !  
 !     Fraction evaluation for integral
 !  
-      implicit real*8 (a-h,o-z)
+      implicit none
+      real(wp), intent(in) :: A, B, C, sinphi, cosphi
+      integer, intent(in) :: k
 
         fract=(-B*sinphi+C*cosphi)/(A+B*cosphi+C*sinphi)**k
 
