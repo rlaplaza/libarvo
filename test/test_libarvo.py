@@ -17,8 +17,8 @@ def test_sphere():
     n_atoms = 1
     faulthandler.enable()
     v, s = molecular_vs(coords, radii, radius_probe)
-    assert_allclose(v, 20.5795)
-    assert_allclose(s, 36.3168)
+    assert_allclose(v, 20.5795, rtol=1e-5)
+    assert_allclose(s, 36.3168, rtol=1e-5)
 
 
 if __name__ == "__main__":

@@ -32,8 +32,8 @@ lib.arvo.argtypes = [
     ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
     ndpointer(dtype=np.float64, ndim=1, flags="C_CONTIGUOUS"),
     c_double,
-    c_double,
-    c_double,
+    POINTER(c_double),
+    POINTER(c_double),
     POINTER(c_int),
     c_char_p,
 ]

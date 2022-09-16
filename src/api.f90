@@ -15,7 +15,7 @@ contains
     !> vdW radii (Å)
     real(c_double), intent(in) :: radii(n_atoms)
     !> Probe radius
-    real(c_double), intent(in) :: probe_radius
+    real(c_double), value, intent(in) :: probe_radius
     !> Molecular volume
     real(c_double), intent(out) :: V
     !> Molecular surface
@@ -29,7 +29,6 @@ contains
     character(:), allocatable :: errmsg_f
 
     ! Call subroutine
-    write(6,*) n_atoms, coordinates, radii, probe_radius, V, S, stat, errmsg_f
     call arvo(n_atoms, coordinates, radii, probe_radius, V, S, stat, errmsg_f)
 
     ! Convert error message to C format.

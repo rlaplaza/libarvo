@@ -44,9 +44,6 @@ def molecular_vs(
             raise ValueError("For a single atom, a single radius is required.")
         coordinates = np.expand_dims(coordinates, axis=0)
 
-    # coordinates_ = coordinates.ctypes.data_as(POINTER(c_double))
-    # radii_ = radii.ctypes.data_as(POINTER(c_double))
-
     V_ = c_double()
     S_ = c_double()
     stat_ = c_int()

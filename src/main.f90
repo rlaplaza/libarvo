@@ -1,20 +1,22 @@
 ! file: main.f90
 
       module arvo_main
-      use stdlib_array, only: trueloc 
       use arvo_env, only: stderr, wp
-      public :: arvo
-      contains
+      implicit none(type, external)
 
-      subroutine arvo(ns,sc,sr,pr,ivolume,iarea,stat,errmsg)
-      implicit none
+      private
+      public :: arvo
+
+      contains
+! call arvo(n_atoms, coordinates, radii, probe_radius, V, S, stat, errmsg_f)
+      subroutine arvo(ns,sc,sr,pr,volume,area,stat,errmsg)
       integer, intent(in) :: ns
 !f2py intent(in) ns
       real(wp), intent(in) :: sc(3, ns), sr(ns), pr
 !f2py intent(in) sc, sr, pr
 !f2py depend(ns) sc, sr
-      real(wp), intent(out) ::  iarea, ivolume
-!f2py intent(out) iarea, ivolume
+      real(wp), intent(out) ::  area, volume
+!f2py intent(out) area, volume
       integer, intent(out) :: stat
 !f2py intent(out) stat
       character(len=:), allocatable, intent(out) :: errmsg
@@ -40,6 +42,7 @@
 !          
 !      dimension spheres(ns,4),neighbors_number(ns),index_start(ns),&
 !     &          neighbors_indices(ki),av(2)
+
       allocate(spheres(ks,4))
       allocate(neighbors_number(ks))
       allocate(index_start(ks))
@@ -57,8 +60,8 @@
       endif
 
       if (size(sc, dim=2).EQ.1 ) then
-      ivolume = (4.0_wp/3.0_wp) * pi * sr(1)**3 
-      iarea = 4.0_wp * pi * sr(1)**2
+      volume = (4.0_wp/3.0_wp) * pi * sr(1)**3 
+      area = 4.0_wp * pi * sr(1)**2
       stat = 0 
       return
       endif
@@ -88,13 +91,13 @@
       enddo
 
 !     Computation of area and volume as a sum of surface integrals
-      ivolume=0d0
-      iarea=0d0
+      volume=0d0
+      area=0d0
       do i=1,ns
-          call iareavolume(i,spheres,neighbors_number,index_start,&
+          call areavolume(i,spheres,neighbors_number,index_start,&
      &          neighbors_indices,ks,kl,ka,ki,av)
-          ivolume=ivolume+av(1)
-          iarea=iarea+av(2)
+          volume=volume+av(1)
+          area=area+av(2)
       enddo
      
       stat = 0
@@ -115,15 +118,14 @@
 !                       2. atom has neighbors with indices 1, 3
 !                       3. atom has neighbors with indices 2, 4
 !                       4. atom has neighbors with indices 1, 3
-!                         5. atom is subset of some atom 
-!                         6. atom has no neighbors 
+!                       5. atom is subset of some atom 
+!                       6. atom has no neighbors 
 !                       7. atom has neighbors with index 1
 !          then we have
 !                 neighbors_number=(3,2,2,2,-1,0,1)
 !               index_start=(1,4,6,8,10,10,10,11)
 !               neighbors_indices(2,4,7,1,3,2,4,1,3,1)
 !                 
-      implicit none
       real(wp), dimension(:,:), intent(in) :: spheres
       integer, intent(in) :: i1, i2, ks, kl, ns, ki
       integer, dimension(:), intent(inout) :: &
@@ -159,7 +161,6 @@
 !       radius in matrix spheres to -radius !!!
 !       If some other sphere is subset of ith sphere, than we change its
 !  
-      implicit none
       integer, intent(in) :: i, ks, kl, ns
       real(wp), dimension(:,:), intent(in) :: spheres
       integer, intent(inout) :: ind(kl)
@@ -206,7 +207,6 @@
 !          dmin - square of minimal distance of the North Pole to neighb
 !  
 
-      implicit none
       real(wp), dimension(:,:), intent(in) :: spheres
       integer, intent(in) :: i1, i2, ks, ki
       integer, allocatable, dimension(:), intent(inout) :: &
@@ -249,7 +249,6 @@
 !       Random rotation of molecule about the y-axis
 !       after bad North Pole test.
 !          Some North Pole is near other spheres surface
-      implicit none
       real(wp), dimension(:,:), intent(inout) :: spheres
       integer, intent(in) :: ks, ns
       real(wp), intent(in) :: sa
@@ -267,14 +266,13 @@
       end subroutine ispheres_rotation
 
 
-      subroutine iareavolume(i,spheres,neighbors_number,index_start,&
+      subroutine areavolume(i,spheres,neighbors_number,index_start,&
      &                        neighbors_indices,ks,kl,ka,ki,av)
 !  
 !     Function computes i-th part of the whole volume -
 !      - the volume of domain inside i-th and outside of
 !        all other spheres
 !     
-      implicit none
       real(wp), dimension(:,:), intent(in) :: spheres
       integer, allocatable, dimension(:), intent(in) :: &
      &      neighbors_number, index_start
@@ -321,12 +319,12 @@
          enddo
 
 !          we will work only with ith and neighbors spheres             
-           call ilocal_spheres(spheres,ind,sphere_local,nls,ks,kl)
+           call local_spheres(spheres,ind,sphere_local,nls,ks,kl)
            av(1)=0d0
          av(2)=0d0
 
-         call imake_ts_circles(sphere_local,circles,kl,nls)
-           narcs=icircles_to_arcs(circles,arcs,kl,nls,ka)
+         call make_ts_circles(sphere_local,circles,kl,nls)
+           narcs=circles_to_arcs(circles,arcs,kl,nls,ka)
 
          npos=0
          do j=1,(nls-1)
@@ -351,16 +349,15 @@
         endif
 
       return
-      end subroutine iareavolume
+      end subroutine areavolume
 
 
 
 
-      subroutine ilocal_spheres(spheres,ind,sphere_local,nls,ks,kl)
+      subroutine local_spheres(spheres,ind,sphere_local,nls,ks,kl)
 !  
 !     Take sphere_local out of the main array spheres
 !  
-      implicit none
       integer, intent(in) :: nls, ks, kl
       real(wp), intent(in), dimension(:,:) :: spheres
       real(wp), intent(inout), dimension(:,:) :: sphere_local
@@ -374,13 +371,13 @@
         enddo 
 
       return
-      end subroutine ilocal_spheres
+      end subroutine local_spheres
 
 
 
 
 
-      subroutine imake_ts_circles(sphere_local,circles,kl,nls)
+      subroutine make_ts_circles(sphere_local,circles,kl,nls)
 !  
 !       Preparing circles structure for 1st sphere in array   circles
 !       according to the paper Hayrjan, Dzurina, Plavka, Busa
@@ -390,7 +387,6 @@
 !       circles(i,3)=ri    - ith circle's radius 
 !       circles(i,4)=+1/-1 - circle orientation 
 !   
-      implicit none
       integer, intent(in) :: kl, nls
       real(wp), intent(in), dimension(:,:) :: sphere_local
       real(wp), intent(inout), dimension(:,:) :: circles
@@ -417,12 +413,12 @@
           endif
       enddo
       return    
-      end subroutine imake_ts_circles
+      end subroutine make_ts_circles
 
 
 
 
-      integer function icircles_to_arcs(circles,arcs,kl,nls,ka)
+      integer function circles_to_arcs(circles,arcs,kl,nls,ka)
 !  
 !       Computing integration arcs
 !       
@@ -435,7 +431,6 @@
 !     arc lies inside all other positive and outside all other
 !       negative circles, then we will put it inside arcs structure
 !  
-      implicit none
       integer, intent(in) :: kl, nls, ka
       real(wp), intent(in), dimension(:,:) :: circles
       real(wp), intent(inout), dimension(:,:) :: arcs
@@ -455,7 +450,7 @@
       else 
 !         more than 1 circle
           do i=1,(nls-1)
-              nna=inew_arcs(i,circles,arcsnew,kl,ka,nls)
+              nna=new_arcs(i,circles,arcsnew,kl,ka,nls)
               if (nna.GT.0) then
                   do j=1,nna
                       do k=1,3
@@ -468,14 +463,14 @@
       endif
 
       deallocate(arcsnew)
-      icircles_to_arcs=number_arc
+      circles_to_arcs=number_arc
       return
-      end function icircles_to_arcs
+      end function circles_to_arcs
 
 
 
 
-      integer function inew_arcs(i,circles,arcsnew,kl,ka,nls)
+      integer function new_arcs(i,circles,arcsnew,kl,ka,nls)
 !  
 !     Function prepares arcs, which are part of i-th circle
 !     in circle structure circles.
@@ -488,7 +483,6 @@
 !       arcsnew(i,2)=sigma - sigma is the starting angle of arc
 !       arcsnew(i,3)=delta - delta is oriented arc angle
 !  
-      implicit none
       integer, intent(in) :: i, kl, ka, nls
       real(wp), intent(in), dimension(:,:) :: circles
       real(wp), intent(inout), dimension(:,:) :: arcsnew
@@ -512,7 +506,7 @@
               d=dsqrt((ti-t)**2+(si-s)**2)
               if ( (d.LT.r+ri) .AND. (dabs(r-ri).LT.d) ) then
 !                  2 intersection points exist
-                  call icircles_intersection(i,j,circles,kl,a1,a2,b1,b2)
+                  call circles_intersection(i,j,circles,kl,a1,a2,b1,b2)
                     angles(num_angle+1)=a1
                     angles(num_angle+2)=a2
                     num_angle=num_angle+2            
@@ -526,7 +520,7 @@
 !           all other negative circles, it will be new arc
           do j=1,(nls-1)
              if (j.NE.i) then
-               number_cond=number_cond+icircle_in_circle(i,j,circles,kl)
+               number_cond=number_cond+circle_in_circle(i,j,circles,kl)
              endif
           enddo
           if (number_cond.EQ.(nls-2)) then
@@ -551,7 +545,7 @@
                   if (jj.NE.i) then
                       t=ti+ri*dcos((angles(j)+angles(j+1))/2d0)
                       s=si+ri*dsin((angles(j)+angles(j+1))/2d0)
-              number_cond=number_cond+ipoint_in_circle(t,s,jj,circles,&
+              number_cond=number_cond+point_in_circle(t,s,jj,circles,&
      &        kl)
                   endif
               enddo
@@ -568,7 +562,7 @@
               if (j.NE.i) then
                   t=ti+ri*dcos((angles(1)+2d0*pi+angles(na))/2d0)
                   s=si+ri*dsin((angles(1)+2d0*pi+angles(na))/2d0)
-              number_cond=number_cond+ipoint_in_circle(t,s,j,circles,kl)
+              number_cond=number_cond+point_in_circle(t,s,j,circles,kl)
               endif
           enddo
           if (number_cond.EQ.(nls-2)) then
@@ -580,13 +574,13 @@
           endif
       endif
 
-      inew_arcs=num_arc
+      new_arcs=num_arc
       return
-      end function inew_arcs
+      end function new_arcs
           
 
 
-      subroutine icircles_intersection(ic1,ic2,circles,kl,a1,a2,b1,b2)
+      subroutine circles_intersection(ic1,ic2,circles,kl,a1,a2,b1,b2)
 !  
 !     Function returns angles of two intersection points
 !     of circles with indices ic1 and ic2 in circles structure circles
@@ -595,7 +589,6 @@
 !     a1 and a2 are corresponding angles with respect to the center of 1
 !     b1 and b2 are corresponding angles with respect to the center of 2
 !  
-      implicit none
       real(wp), intent(in), dimension(:,:) :: circles
       integer, intent(in) :: ic1, ic2, kl
       real(wp), intent(inout) :: a1, a2, b1, b2
@@ -697,13 +690,13 @@
       if (b2.LT.0) b2=b2+2d0*pi
 
       return
-      end subroutine icircles_intersection
+      end subroutine circles_intersection
       
           
           
 
 
-      integer function icircle_in_circle(i,k,circles,kl)
+      integer function circle_in_circle(i,k,circles,kl)
 !  
 !        1  if i-th circle is inside k-th positive circle or 
 !                            outside k-th negative circle
@@ -711,7 +704,6 @@
 !  
 !        WE KNOW, THAT CIRCLES HAVE LESS THAN 2 INTERSECTION POINTS !!!
 !  
-      implicit none
       integer, intent(in) :: i, k, kl
       real(wp), intent(in), dimension(:,:) :: circles
       real(wp) :: d
@@ -720,15 +712,15 @@
      &        (circles(i,2)-circles(k,2))**2)
       if (d.LT.circles(k,3)) then
           if (circles(k,4).GT.0) then
-              icircle_in_circle=1
+              circle_in_circle=1
           else
-              icircle_in_circle=0
+              circle_in_circle=0
           endif    
       elseif (d.GT.circles(k,3)) then 
           if (circles(k,4).GT.0) then
-              icircle_in_circle=0
+              circle_in_circle=0
           else
-              icircle_in_circle=1
+              circle_in_circle=1
           endif
       else 
 !           d=circles(k,3) - right point on k-th circle - touching of ci
@@ -736,25 +728,25 @@
      &   (circles(i,2)-circles(k,2))**2)
           if (d.LT.circles(k,3)) then
               if (circles(k,4).GT.0) then
-                  icircle_in_circle=1
+                  circle_in_circle=1
               else
-                  icircle_in_circle=0
+                  circle_in_circle=0
               endif
           else
               if (circles(k,4).GT.0) then
-                  icircle_in_circle=0
+                  circle_in_circle=0
               else
-                  icircle_in_circle=1
+                  circle_in_circle=1
               endif
           endif
       endif
 
       return
-      end function icircle_in_circle
+      end function circle_in_circle
 
 
 
-      integer function ipoint_in_circle(t,s,k,circles,kl)
+      integer function point_in_circle(t,s,k,circles,kl)
 !  
 !  
 !       1  if point (t,s) is inside k-th positive circle 
@@ -763,7 +755,6 @@
 !  
 !     WE KNOW, THAT POINT IS NOT ON THE CIRCLE !!!
 !  
-      implicit none
       integer, intent(in) :: k, kl
       real(wp), intent(in), dimension(:,:) :: circles
       real(wp), intent(in) :: t, s 
@@ -772,20 +763,20 @@
       d=dsqrt((t-circles(k,1))**2+(s-circles(k,2))**2)
       if (d.LT.circles(k,3)) then
           if (circles(k,4).GT.0) then
-              ipoint_in_circle=1
+              point_in_circle=1
           else
-              ipoint_in_circle=0
+              point_in_circle=0
           endif
       else
           if (circles(k,4).GT.0) then
-              ipoint_in_circle=0
+              point_in_circle=0
           else
-              ipoint_in_circle=1
+              point_in_circle=1
           endif
       endif
 
       return
-      end function ipoint_in_circle
+      end function point_in_circle
 
 
 
@@ -795,7 +786,6 @@
 !     Sorting array angles in increasing order
 !     num_angle is the angles array length
 !  
-      implicit none
       real(wp), intent(inout), dimension(:) :: angles
       integer, intent(in) :: num_angle, ka
       real(wp) :: amax
@@ -828,7 +818,6 @@
 !     Sorting array angles in decreasing order
 !     num_angle is the angles array length
 !  
-      implicit none
       real(wp), intent(inout), dimension(:) :: angles
       integer, intent(in) :: num_angle, ka
       real(wp) :: amin
@@ -860,7 +849,6 @@
 !     Deletion of "equal" (to some precision eps_angle)
 !     angles in sorted vector angles
 !  
-      implicit none
       integer, intent(in) :: ka
       integer, intent(in) :: num_angle 
       real(wp), intent(inout), dimension(:) :: angles
@@ -893,7 +881,6 @@
 !     Computing integrals over arcs given in arc structure
 !       according to paper by Hayrian, Dzurina, Plavka, Busa
 !       
-      implicit none
       integer, intent(in) :: kl, ka, narcs
       real(wp), intent(in), dimension(:,:) :: circles, arcs
       real(wp), intent(in) :: r1, z1
@@ -981,7 +968,6 @@
 !  
 !     Fraction evaluation for integral
 !  
-      implicit none
       real(wp), intent(in) :: A, B, C, sinphi, cosphi
       integer, intent(in) :: k
 
