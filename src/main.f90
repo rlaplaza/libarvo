@@ -29,7 +29,7 @@
 !     Computing surface area and volume of the overlapping spheres
       real(wp), parameter :: pi=3.14159265358979323846264d0, sa=0.324d0 
 ! "Random" sin value sa
-      integer, parameter :: ks=300,kl=300,ka=2000,ki=10000
+      integer, parameter :: ks=1000,kl=300,ka=5000,ki=30000
 
 !                ks - maximal sphere number
 !                kl - maximal neighbors number of one sphere

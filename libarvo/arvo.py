@@ -51,7 +51,7 @@ def molecular_vs(
     probe_radius = c_double(probe_radius)
     n_atoms = c_int(coordinates.shape[0])
 
-    # Run libconeangle
+    # Run libarvo
     lib.arvo(
         n_atoms,
         coordinates,
