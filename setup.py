@@ -1,7 +1,7 @@
 from skbuild import setup
 
 URL = "https://github.com/rlaplaza/libarvo"
-DESCRIPTION = "Python library for libarvo"
+DESCRIPTION = "Python library for arvo"
 LONG_DESCRIPTION = f"""\
 {DESCRIPTION}. For more information, see the [project repository]({URL}).
 """

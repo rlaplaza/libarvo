@@ -6,7 +6,7 @@ Library for calculating molecular surfaces and volumes using the algorithm imple
 
 ### pip
 
-To install the Python API with the embedded libarvo shared library you can use pip.
+(TO BE ADDED) To install the Python API with the embedded libarvo shared library you can use pip.
 
 ```shell
 pip install libarvo
@@ -21,7 +21,7 @@ pip install git+https://github.com/rlaplaza/libarvo
 
 ### conda
 
-Another option to install the Python API that doesn't require a compiler is with conda.
+(TO BE ADDED) Another option to install the Python API that doesn't require a compiler is with conda.
 
 ```shell
 conda install -c conda-forge libarvo
