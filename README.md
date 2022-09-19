@@ -126,6 +126,8 @@ The C header file can be found [here](include/arvo.h). An [example](libarvo/lib.
 
 Any published work derived from the use of libarvo should cite the original publications for the original F77 implementation and algorithm.[^1]
 
+The [libconeangle](https://github.com/kjelljorner/libconeangle) library by K. Jorner is acknowledged for inspiration regarding packaging, distribution and coding style. 
+
 ## References
 
 [^1]: J. Buša, J. Džurina, E. Hayryan, S. Hayryan, C.-K. Hu, J. Plavka, I. Pokorný, J. Skřivánek and M.-C. Wu, *Computer Physics Communications*, **2005**, *165*, 59–96. https://doi.org/10.1016/j.cpc.2004.08.002
