@@ -8,7 +8,7 @@ LONG_DESCRIPTION = f"""\
 
 setup(
     name="libarvo",
-    version="0.1.0",
+    version="0.1.2",
     author="R. Laplaza",
     author_email="rlaplaza@duck.com",
     description=DESCRIPTION,
