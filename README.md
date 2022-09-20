@@ -66,8 +66,12 @@ The `atomic_vs` function is exposed for atomic volume and surface computations. 
 >>> radii = np.array([2.1, 1.7, 1.52])
 >>> probe_radius = 0.0
 >>> a_volume, a_surface = atomic_vs(coordinates, radii, probe_radius)
+>>> a_volume
+array([29.75261318,  2.28751751, 27.42549055])
 >>> np.sum(a_volume)
 59.465621235350206
+>>> a_surface
+array([47.14902255, 17.30518705, 17.25330698])
 >>> np.sum(a_surface)
 81.70751658028372
 ```
