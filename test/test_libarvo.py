@@ -5,7 +5,7 @@ from numpy.testing import assert_allclose
 from numpy.typing import NDArray
 import pytest
 
-from libarvo import molecular_vs
+from libarvo import molecular_vs, atomic_vs
 
 
 def test_onesphere():
@@ -22,7 +22,11 @@ def test_threespheres():
     radii = np.asarray([1.7, 1.7, 1.7], dtype=float)
     radius_probe = 0.0
     v, s = molecular_vs(coords, radii, radius_probe)
+    n_v, n_s = atomic_vs(coords, radii, radius_probe)
     assert_allclose(v, 61.7386, rtol=1e-5)
+    assert_allclose(s, 108.9504, rtol=1e-5)
+    assert_allclose(v, np.sum(n_v), rtol=1e-5)
+    assert_allclose(s, np.sum(n_s), rtol=1e-5)
 
 
 def test_twoospheres():
@@ -33,11 +37,14 @@ def test_twoospheres():
         radii = np.asarray([r, r], dtype=float)
         radius_probe = 0.0
         v, s = molecular_vs(coords, radii, radius_probe)
+        n_v, n_s = atomic_vs(coords, radii, radius_probe)
         # Analytical expression for the overlap area of two spheres
         av = (2 * (4 / 3) * np.pi * r ** 3) - (1 / 12) * np.pi * (4 * r + d) * (
             2 * r - d
         ) ** 2
         assert_allclose(v, av, rtol=1e-5)
+        assert_allclose(v, np.sum(n_v), rtol=1e-5)
+        assert_allclose(n_v[0], n_v[1], rtol=1e-5)
 
 
 def test_fourospheres():

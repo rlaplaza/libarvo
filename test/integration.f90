@@ -25,19 +25,19 @@ contains
   subroutine test_onesphere(error)
     type(error_type), allocatable, intent(out) :: error
 
-    real(wp) :: coordinates(1, 3), radii(1), probe_radius, V, S
     integer :: stat, n
+    real(wp) :: coordinates(1, 3), radii(1), probe_radius, V, S, ns_v(1), ns_s(1)
     character(:), allocatable :: errmsg
 
     n = 1
     probe_radius = 0._wp
     coordinates = reshape([0._wp, 0._wp, 0._wp], [1, 3])
     radii = [1.7_wp]
-    call arvo(n, coordinates, radii, probe_radius, V, S, stat, errmsg)
+    call arvo(n, coordinates, radii, probe_radius, V, S, ns_v, ns_s, stat, errmsg)
 
-    call check(error, V, 20.5795_wp, thr=0.001_wp)
+    call check(error, V, 20.5795_wp, thr=0.0001_wp)
     if (allocated(error)) return
-    call check(error, S, 36.3168_wp, thr=0.001_wp)
+    call check(error, S, 36.3168_wp, thr=0.0001_wp)
     if (allocated(error)) return
 
   end subroutine test_onesphere
@@ -45,17 +45,20 @@ contains
   subroutine test_threespheres(error)
     type(error_type), allocatable, intent(out) :: error
 
-    real(wp) :: coordinates(3, 3), radii(3), probe_radius, V, S
     integer :: stat, n
+    real(wp) :: coordinates(3, 3), radii(3), probe_radius, V, S, ns_v(3), ns_s(3)
     character(:), allocatable :: errmsg
 
     n = 3
     probe_radius = 0._wp
     coordinates = reshape([0._wp, 0._wp, 0._wp, 0._wp, 0._wp, 3.4_wp, 3.4_wp, 0._wp, 0._wp], [3, 3])
     radii = [1.7_wp, 1.7_wp, 1.7_wp]
-    call arvo(n, coordinates, radii, probe_radius, V, S, stat, errmsg)
+    call arvo(n, coordinates, radii, probe_radius, V, S, ns_v, ns_s, stat, errmsg)
 
-    call check(error, V, 61.7386_wp, thr=0.001_wp)
+    call check(error, V, 61.7386_wp, thr=0.0001_wp)
+    if (allocated(error)) return
+    V = sum(ns_v)
+    call check(error, V, 61.7386_wp, thr=0.0001_wp) 
     if (allocated(error)) return
 
     ! Check stat calculation failed.
@@ -67,15 +70,15 @@ contains
   subroutine test_threeospheres(error)
     type(error_type), allocatable, intent(out) :: error
 
-    real(wp) :: coordinates(3, 3), radii(3), probe_radius, V, S
     integer :: stat, n
+    real(wp) :: coordinates(3, 3), radii(3), probe_radius, V, S, ns_v(3), ns_s(3)
     character(:), allocatable :: errmsg
 
     n = 3
     probe_radius = 1.20_wp
     coordinates = reshape([0._wp, 0._wp, 0._wp, 0._wp, 0._wp, 1.90_wp, 1.90_wp, 0._wp, 0._wp], [3, 3])
     radii = [1.7_wp, 1.7_wp, 1.7_wp]
-    call arvo(n, coordinates, radii, probe_radius, V, S, stat, errmsg)
+    call arvo(n, coordinates, radii, probe_radius, V, S, ns_v, ns_s, stat, errmsg)
 
     ! Check stat calculation failed.
     call check(error, stat, 0, message=errmsg)

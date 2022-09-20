@@ -3,7 +3,9 @@ void arvo(
 	const double *coordinates,
 	const double *radii,
 	const double probe_radius,
-	double *V,
-	double *S,
+	double *volume,
+	double *area,
+	double *ns_v,
+	double *ns_a,
 	int *stat,
 	char *errmsg);

@@ -8,15 +8,16 @@
       public :: arvo
 
       contains
-! call arvo(n_atoms, coordinates, radii, probe_radius, V, S, stat, errmsg_f)
-      subroutine arvo(ns,sc,sr,pr,volume,area,stat,errmsg)
+! call arvo(n_atoms, coordinates, radii, probe_radius, volume, area, ns_v, ns_a, stat, errmsg_f)
+      subroutine arvo(ns,sc,sr,pr,volume,area,ns_v,ns_a,stat,errmsg)
       integer, intent(in) :: ns
 !f2py intent(in) ns
       real(wp), intent(in) :: sc(3, ns), sr(ns), pr
 !f2py intent(in) sc, sr, pr
 !f2py depend(ns) sc, sr
-      real(wp), intent(out) ::  area, volume
-!f2py intent(out) area, volume
+      real(wp), intent(out) ::  area, volume, ns_a(ns), ns_v(ns)
+!f2py intent(out) area, volume, ns_a, ns_v
+!f2py depend(ns) ns_a, ns_v
       integer, intent(out) :: stat
 !f2py intent(out) stat
       character(len=:), allocatable, intent(out) :: errmsg
@@ -29,7 +30,7 @@
 !     Computing surface area and volume of the overlapping spheres
       real(wp), parameter :: pi=3.14159265358979323846264d0, sa=0.324d0 
 ! "Random" sin value sa
-      integer, parameter :: ks=1000,kl=300,ka=5000,ki=30000
+      integer, parameter :: ks=1000,kl=300,ka=5000,ki=30000,maxnpt=50000
 
 !                ks - maximal sphere number
 !                kl - maximal neighbors number of one sphere
@@ -62,6 +63,8 @@
       if (size(sc, dim=2).EQ.1 ) then
       volume = (4.0_wp/3.0_wp) * pi * sr(1)**3 
       area = 4.0_wp * pi * sr(1)**2
+      ns_v(1)=volume
+      ns_a(1)=area
       stat = 0 
       return
       endif
@@ -85,10 +88,20 @@
      &          neighbors_indices,ks,kl,ns,ki)
 
 !   If some North Pole is close to the other atoms surface molecules rot
-      do while (North_Pole_test(1,ns,spheres,neighbors_number,&
-     &          index_start,neighbors_indices,ks,ki).EQ.0) 
-           call ispheres_rotation(spheres,ks,ns,sa) ! random molecule rot
+      do i=1,maxnpt
+          if (North_Pole_test(1,ns,spheres,neighbors_number,&
+     &          index_start,neighbors_indices,ks,ki).EQ.0) then
+          call ispheres_rotation(spheres,ks,ns,sa) ! random molecule rot
+          else
+          exit
+          endif
       enddo
+      if (North_Pole_test(1,ns,spheres,neighbors_number,&
+     &          index_start,neighbors_indices,ks,ki).EQ.0) then
+      errmsg = "arvo could not rotate your molecule adequately."
+      stat = 1
+      return
+      endif
 
 !     Computation of area and volume as a sum of surface integrals
       volume=0d0
@@ -96,6 +109,8 @@
       do i=1,ns
           call areavolume(i,spheres,neighbors_number,index_start,&
      &          neighbors_indices,ks,kl,ka,ki,av)
+          ns_v(i)=av(1)
+          ns_a(i)=av(2)
           volume=volume+av(1)
           area=area+av(2)
       enddo

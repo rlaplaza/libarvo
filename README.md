@@ -42,7 +42,7 @@ libarvo.git = "https://github.com/rlaplaza/libarvo"
 
 ### Python API
 
-There is only one function: `molecular_vs`. An example is given below for PdCO.
+The `molecular_vs` function is exposed for total molecular volume and surface computations. An example is given below for PdCO.
 
 ```python
 >>> from libarvo import molecular_vs
@@ -57,12 +57,27 @@ There is only one function: `molecular_vs`. An example is given below for PdCO.
 81.70751658028372
 ```
 
+The `atomic_vs` function is exposed for atomic volume and surface computations. An example is given below for PdCO.
+
+```python
+>>> from libarvo import atomic_vs
+>>> import numpy as np
+>>> coordinates =  np.array([[0.0, 0.0, -0.52], [0.0, 0.0, 1.76], [0.0, 0.0, 2.86]])
+>>> radii = np.array([2.1, 1.7, 1.52])
+>>> probe_radius = 0.0
+>>> a_volume, a_surface = atomic_vs(coordinates, radii, probe_radius)
+>>> np.sum(a_volume)
+59.465621235350206
+>>> np.sum(a_surface)
+81.70751658028372
+```
+
 ### Fortran API
 
 The Fortran API exposes the function `arvo` with the follow signature.
 
 ```fortran
-subroutine arvo(ns, sc, sr, pr, volume, area, stat, errmsg)
+subroutine arvo(ns, sc, sr, pr, volume, area, ns_v, ns_a, stat, errmsg)
   !! Computing surface area and volume of the overlapping spheres
   !> Number of spheres
   integer, intent(in) :: ns
@@ -72,6 +87,8 @@ subroutine arvo(ns, sc, sr, pr, volume, area, stat, errmsg)
   real(wp), intent(in) :: sc(3, ns), sr(ns), pr
   !> surface area and volume (Å² and Å³ respectively) 
   real(wp), intent(out) ::  area, volume
+  !> per atom surface area and volume (Å² and Å³ respectively) 
+  real(wp), intent(out) ::  ns_a(ns), ns_v(ns)
   !> Return code
   integer, intent(out) :: stat
   !> Error message
@@ -88,7 +105,7 @@ A minimal [FORD](https://github.com/Fortran-FOSS-Programmers/ford) documentation
 The C API exposes the subroutine `arvo_c` with the C name `arvo`. It's signature is the same as for the Fortran subroutine. 
 
 ```fortran
-subroutine arvo_c(n_atoms, coordinates, radii, probe_radius, V, S, stat, errmsg) &
+subroutine arvo_c(n_atoms, coordinates, radii, probe_radius, volume, area, ns_v, ns_a, stat, errmsg) &
   bind(c, name="arvo")
   !! Calculate molecular volume and surface
   !> Number of atoms
@@ -97,12 +114,16 @@ subroutine arvo_c(n_atoms, coordinates, radii, probe_radius, V, S, stat, errmsg)
   real(c_double), intent(in) :: coordinates(3, n_atoms)
   !> vdW radii (Å)
   real(c_double), intent(in) :: radii(n_atoms)
-  !> Probe radius
+  !> Probe radius (Å)
   real(c_double), value, intent(in) :: probe_radius
-  !> Molecular volume
-  real(c_double), intent(out) :: V
-  !> Molecular surface
-  real(c_double), intent(out) :: S
+  !> Molecular volume (Å^3)
+  real(c_double), intent(out) :: volume
+  !> Molecular surface (Å^2)
+  real(c_double), intent(out) :: area
+  !> Volume per atom (Å^3)
+  real(c_double), intent(out) :: ns_v(n_atoms)
+  !> Surface per atom (Å^2)
+  real(c_double), intent(out) :: ns_a(n_atoms)
   !> Return code
   integer(c_int), intent(out) :: stat
   !> Error message

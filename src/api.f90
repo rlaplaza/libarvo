@@ -5,7 +5,7 @@ module arvo_api
   implicit none(type, external)
 
 contains
-  subroutine arvo_c(n_atoms, coordinates, radii, probe_radius, V, S, stat, errmsg) &
+  subroutine arvo_c(n_atoms, coordinates, radii, probe_radius, volume, area, ns_v, ns_a, stat, errmsg) &
     bind(c, name="arvo")
     !! Calculate molecular volume and surface
     !> Number of atoms
@@ -14,12 +14,16 @@ contains
     real(c_double), intent(in) :: coordinates(3, n_atoms)
     !> vdW radii (Å)
     real(c_double), intent(in) :: radii(n_atoms)
-    !> Probe radius
+    !> Probe radius (Å)
     real(c_double), value, intent(in) :: probe_radius
-    !> Molecular volume
-    real(c_double), intent(out) :: V
-    !> Molecular surface
-    real(c_double), intent(out) :: S
+    !> Molecular volume (Å^3)
+    real(c_double), intent(out) :: volume
+    !> Molecular surface (Å^2)
+    real(c_double), intent(out) :: area
+    !> Volume per atom (Å^3)
+    real(c_double), intent(out) :: ns_v(n_atoms)
+    !> Surface per atom (Å^2)
+    real(c_double), intent(out) :: ns_a(n_atoms)
     !> Return code
     integer(c_int), intent(out) :: stat
     !> Error message
@@ -29,7 +33,7 @@ contains
     character(:), allocatable :: errmsg_f
 
     ! Call subroutine
-    call arvo(n_atoms, coordinates, radii, probe_radius, V, S, stat, errmsg_f)
+    call arvo(n_atoms, coordinates, radii, probe_radius, volume, area, ns_v, ns_a, stat, errmsg_f)
 
     ! Convert error message to C format.
     if (allocated(errmsg_f)) then
