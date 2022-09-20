@@ -19,14 +19,6 @@ You will need a Fortran compiler such as GFortran to compile the shared library 
 pip install git+https://github.com/rlaplaza/libarvo
 ```
 
-### conda
-
-(Currently not available) Another option to install the Python API that doesn't require a compiler is with conda.
-
-```shell
-conda install -c conda-forge libarvo
-```
-
 ### cmake
 
 The shared library can be built and installed with cmake. An example worklfow is given below where you need to replace $PREFIX with the desired directory.
