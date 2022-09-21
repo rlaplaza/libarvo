@@ -1,5 +1,9 @@
 # libarvo
 
+![PyPI - License](https://img.shields.io/pypi/l/libarvo)
+[![PyPI](https://img.shields.io/pypi/v/libarvo)](https://pypi.org/project/libarvo/)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/libarvo)
+
 Library for calculating molecular surfaces and volumes using the algorithm implemented by J. Buša and coworkers.[^1] This library is not meant as a standalone application but rather as a resource for other packages. libarvo is (re)written in Fortran90 with a C interface and Python API.
 
 ## Installation
